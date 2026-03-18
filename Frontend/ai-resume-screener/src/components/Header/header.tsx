@@ -1,12 +1,13 @@
-import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
 
 function Header() {
   const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth();
+
   const navItems = [
     { label: "Dashboard", path: "/" },
     { label: "History", path: "/history" },
-    { label: "Admin", path: "/admin" },
     { label: "Profile", path: "/profile" },
   ];
 
@@ -23,25 +24,48 @@ function Header() {
       </button>
 
       <nav className="flex items-center gap-1 ml-auto">
-        {navItems.map(({ label, path }) => (
-          <NavLink
-            key={label}
-            to={path}
-            className={({ isActive }) =>
-              `relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                isActive
-                  ? "text-white bg-blue-500/15 after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:w-4 after:h-0.5 after:bg-blue-400 after:rounded-full"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
-              }`
-            }
-          >
-            {label}
-          </NavLink>
-        ))}
-        <div className="w-px h-6 bg-white/10 mx-3" />
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-400 bg-red-400/10 border border-red-400/20 hover:bg-red-400/20 hover:border-red-400/40 hover:text-red-300 hover:-translate-y-px active:translate-y-0 transition-all duration-200">
-          ⇥ Logout
-        </button>
+        {isAuthenticated ? (
+          <>
+            {navItems.map(({ label, path }) => (
+              <NavLink
+                key={label}
+                to={path}
+                className={({ isActive }) =>
+                  `relative px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isActive
+                      ? "text-white bg-blue-500/15"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                  }`
+                }
+              >
+                {label}
+              </NavLink>
+            ))}
+            <div className="w-px h-6 bg-white/10 mx-3" />
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-400 bg-red-400/10 border border-red-400/20 hover:bg-red-400/20 transition-all duration-200"
+            >
+              ⇥ Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => navigate("/login")}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-white/5 transition-all duration-200"
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => navigate("/signup")}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all duration-200"
+              style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}
+            >
+              Get Started
+            </button>
+          </>
+        )}
       </nav>
     </header>
   );

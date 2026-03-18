@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
 
 function Login() {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ identifier: "", password: "" });
+  const { login } = useAuth();
+  const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -12,18 +14,21 @@ function Login() {
     setError("");
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.identifier || !form.password) {
+    if (!form.email || !form.password) {
       setError("Please fill in all fields.");
       return;
     }
     setLoading(true);
-    // Mock login — replace with real API call
-    setTimeout(() => {
+    try {
+      await login(form.email, form.password);
+      navigate("/");
+    } catch (err: any) {
+      setError(err.response?.data?.detail || "Invalid email or password.");
+    } finally {
       setLoading(false);
-      navigate("/profile");
-    }, 1500);
+    }
   };
 
   return (
@@ -55,15 +60,15 @@ function Login() {
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
-            {/* Username or Email */}
+            {/* Email */}
             <div className="flex flex-col gap-2">
-              <label className="text-gray-400 text-sm font-medium">Username or Email</label>
+              <label className="text-gray-400 text-sm font-medium">Email</label>
               <input
-                type="text"
-                name="identifier"
-                value={form.identifier}
+                type="email"
+                name="email"
+                value={form.email}
                 onChange={handleChange}
-                placeholder="Enter your username or email"
+                placeholder="Enter your email"
                 className="w-full px-4 py-3 rounded-xl text-gray-200 text-sm outline-none placeholder-gray-600 transition-all duration-150"
                 style={{ backgroundColor: "#0d1117", border: "1px solid #2a3a4e" }}
                 onFocus={(e) => (e.currentTarget.style.borderColor = "#60a5fa")}
@@ -102,7 +107,6 @@ function Login() {
           </form>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-gray-600 text-sm mt-6">
           Don't have an account?{" "}
           <Link to="/signup" className="text-blue-400 hover:text-blue-300 transition-colors font-medium">

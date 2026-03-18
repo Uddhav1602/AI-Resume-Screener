@@ -2,8 +2,8 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 class Settings(BaseSettings):
-    # Gemini AI
-    gemini_api_key: str
+    # GROQ AI
+    groq_api_key: str
 
     # JWT
     secret_key: str
