@@ -34,7 +34,7 @@ A full-stack AI-powered resume analysis tool. Upload a PDF resume, paste a job d
 | Framework | [FastAPI](https://fastapi.tiangolo.com/) (Python) |
 | Database | SQLite via [SQLAlchemy](https://www.sqlalchemy.org/) |
 | Auth | JWT (Bearer tokens) |
-| AI | Google Gemini / OpenAI (via backend service) |
+| AI | [Llama 3.3 70B](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) via [Groq](https://groq.com/) |
 | File Handling | PDF upload & parsing |
 
 ---
@@ -112,10 +112,12 @@ pip install -r requirements.txt
 Create a `.env` file in the `Backend/` directory (refer to `.env` for required keys):
 
 ```env
+GROQ_API_KEY=your_groq_api_key        # Get from https://console.groq.com
 SECRET_KEY=your_jwt_secret_key
 ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
-GEMINI_API_KEY=your_google_gemini_api_key   # or equivalent AI key
+ACCESS_TOKEN_EXPIRE_MINUTES=60
+DATABASE_URL=sqlite:///./resume_analyzer.db
+UPLOAD_DIR=uploads
 ```
 
 Start the backend server:
