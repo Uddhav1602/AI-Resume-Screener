@@ -19,10 +19,18 @@ interface AnalysisDetail {
   match_score: number;
   ai_response: {
     match_score: number;
-    matched_keywords: string[];
-    missing_keywords: string[];
+    score_explanation?: string;
+    // New weighted format
+    matched_required?: string[];
+    missing_required?: string[];
+    matched_preferred?: string[];
+    missing_preferred?: string[];
+    // Old flat format (backward compat)
+    matched_keywords?: string[];
+    missing_keywords?: string[];
     recommendations: { section: string; issue: string; suggestion: string }[];
     overall_summary: string;
+    rewrite_suggestions?: any[];
   };
   created_at: string;
 }

@@ -165,7 +165,19 @@ function HomePage() {
       </div>
 
       {/* ─── RESULTS SECTION ─────────────────────────────────── */}
-      {analysis && (
+      {analysis && (() => {
+        const ai = analysis.ai_response;
+        // Backward compat: detect old flat format vs new weighted format
+        const isNewFormat = Array.isArray(ai.matched_required);
+        const matchedRequired = isNewFormat ? ai.matched_required : [];
+        const missingRequired = isNewFormat ? ai.missing_required : [];
+        const matchedPreferred = isNewFormat ? ai.matched_preferred : [];
+        const missingPreferred = isNewFormat ? ai.missing_preferred : [];
+        // Fallback for old format
+        const flatMatched = !isNewFormat ? (ai.matched_keywords || []) : [];
+        const flatMissing = !isNewFormat ? (ai.missing_keywords || []) : [];
+
+        return (
         <div className="w-full max-w-5xl mt-12 flex flex-col gap-6">
 
           {/* Divider */}
@@ -178,80 +190,191 @@ function HomePage() {
           {/* ── Row 1: Score Gauge + Bar Chart + Radar ── */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            {/* Score Gauge */}
+            {/* Score Gauge + Explanation */}
             <div className="rounded-2xl p-6 flex flex-col items-center" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
               <h3 className="text-white font-semibold text-sm mb-4 self-start">Match Score</h3>
-              <ScoreGauge score={analysis.ai_response.match_score} />
+              <ScoreGauge score={ai.match_score} />
+              {ai.score_explanation && (
+                <p className="text-gray-400 text-xs italic text-center mt-3 leading-relaxed px-2"
+                   style={{ borderTop: "1px solid #2a3a4e", paddingTop: "12px", width: "100%" }}>
+                  💡 {ai.score_explanation}
+                </p>
+              )}
             </div>
 
             {/* Keywords Bar Chart */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
               <h3 className="text-white font-semibold text-sm mb-4">Keywords Overview</h3>
-              <KeywordsBarChart
-                matched={analysis.ai_response.matched_keywords}
-                missing={analysis.ai_response.missing_keywords}
-              />
+              {isNewFormat ? (
+                <KeywordsBarChart
+                  matchedRequired={matchedRequired}
+                  missingRequired={missingRequired}
+                  matchedPreferred={matchedPreferred}
+                  missingPreferred={missingPreferred}
+                />
+              ) : (
+                <KeywordsBarChart
+                  matchedRequired={flatMatched}
+                  missingRequired={flatMissing}
+                  matchedPreferred={[]}
+                  missingPreferred={[]}
+                />
+              )}
             </div>
 
             {/* Radar Chart */}
             <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
               <h3 className="text-white font-semibold text-sm mb-4">Resume Sections</h3>
-              <SkillsRadar aiResponse={analysis.ai_response} />
+              <SkillsRadar aiResponse={ai} />
             </div>
           </div>
 
           {/* ── Row 2: Summary ── */}
           <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
             <h3 className="text-white font-semibold mb-3">📝 Overall Summary</h3>
-            <p className="text-gray-400 text-sm leading-relaxed">{analysis.ai_response.overall_summary}</p>
+            <p className="text-gray-400 text-sm leading-relaxed">{ai.overall_summary}</p>
           </div>
 
-          {/* ── Row 3: Keywords Grid ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* ── Row 3: Keywords — Required / Preferred split ── */}
+          {isNewFormat ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-            {/* Matched Keywords */}
-            <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <span className="text-green-400">✓</span> Matched Keywords
-                <span className="ml-auto text-xs text-gray-500">{analysis.ai_response.matched_keywords.length} found</span>
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {analysis.ai_response.matched_keywords.map((kw: string, i: number) => (
-                  <span key={i} className="px-3 py-1 rounded-full text-xs font-medium text-green-400"
-                    style={{ backgroundColor: "#1e2d1e", border: "1px solid #22c55e30" }}>
-                    {kw}
+              {/* Required Keywords */}
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
+                <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
+                  🎯 Required Keywords
+                  <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: "#1e2d3d", color: "#60a5fa", border: "1px solid #60a5fa30" }}>
+                    80% weight
                   </span>
-                ))}
+                </h3>
+                <p className="text-gray-600 text-xs mb-4">Must-have skills from the job description</p>
+
+                {matchedRequired.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                      ✓ Matched ({matchedRequired.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {matchedRequired.map((kw: string, i: number) => (
+                        <span key={i} className="px-3 py-1 rounded-full text-xs font-medium text-green-400"
+                          style={{ backgroundColor: "#1e2d1e", border: "1px solid #22c55e30" }}>
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {missingRequired.length > 0 && (
+                  <div>
+                    <p className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                      ✗ Missing ({missingRequired.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {missingRequired.map((kw: string, i: number) => (
+                        <span key={i} className="px-3 py-1 rounded-full text-xs font-medium text-red-400"
+                          style={{ backgroundColor: "#2a1e1e", border: "1px solid #ef444430" }}>
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Preferred Keywords */}
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
+                <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
+                  ⭐ Preferred Keywords
+                  <span className="ml-auto text-xs font-medium px-2 py-0.5 rounded-full"
+                    style={{ backgroundColor: "#2a1e3d", color: "#a78bfa", border: "1px solid #a78bfa30" }}>
+                    20% weight
+                  </span>
+                </h3>
+                <p className="text-gray-600 text-xs mb-4">Nice-to-have skills and bonus qualifications</p>
+
+                {matchedPreferred.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-green-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                      ✓ Matched ({matchedPreferred.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {matchedPreferred.map((kw: string, i: number) => (
+                        <span key={i} className="px-3 py-1 rounded-full text-xs font-medium text-green-400"
+                          style={{ backgroundColor: "#1e2d1e", border: "1px solid #22c55e30" }}>
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {missingPreferred.length > 0 && (
+                  <div>
+                    <p className="text-yellow-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                      ○ Missing ({missingPreferred.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {missingPreferred.map((kw: string, i: number) => (
+                        <span key={i} className="px-3 py-1 rounded-full text-xs font-medium text-yellow-400"
+                          style={{ backgroundColor: "#2a2a1e", border: "1px solid #f9731630" }}>
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {matchedPreferred.length === 0 && missingPreferred.length === 0 && (
+                  <p className="text-gray-600 text-sm italic">No preferred keywords identified in the job description</p>
+                )}
               </div>
             </div>
-
-            {/* Missing Keywords */}
-            <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
-              <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
-                <span className="text-red-400">✗</span> Missing Keywords
-                <span className="ml-auto text-xs text-gray-500">{analysis.ai_response.missing_keywords.length} missing</span>
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {analysis.ai_response.missing_keywords.map((kw: string, i: number) => (
-                  <span key={i} className="px-3 py-1 rounded-full text-xs font-medium text-red-400"
-                    style={{ backgroundColor: "#2a1e1e", border: "1px solid #ef444430" }}>
-                    {kw}
-                  </span>
-                ))}
+          ) : (
+            /* Fallback: old flat keyword format */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
+                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                  <span className="text-green-400">✓</span> Matched Keywords
+                  <span className="ml-auto text-xs text-gray-500">{flatMatched.length} found</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {flatMatched.map((kw: string, i: number) => (
+                    <span key={i} className="px-3 py-1 rounded-full text-xs font-medium text-green-400"
+                      style={{ backgroundColor: "#1e2d1e", border: "1px solid #22c55e30" }}>
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
+                <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
+                  <span className="text-red-400">✗</span> Missing Keywords
+                  <span className="ml-auto text-xs text-gray-500">{flatMissing.length} missing</span>
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {flatMissing.map((kw: string, i: number) => (
+                    <span key={i} className="px-3 py-1 rounded-full text-xs font-medium text-red-400"
+                      style={{ backgroundColor: "#2a1e1e", border: "1px solid #ef444430" }}>
+                      {kw}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* ── Row 4: Recommendations ── */}
           <div className="rounded-2xl p-6" style={{ backgroundColor: "#131c27", border: "1px solid #2a3a4e" }}>
             <h3 className="text-white font-semibold mb-5 flex items-center gap-2">
               💡 Recommendations
               <span className="ml-auto text-xs text-gray-500">
-                {analysis.ai_response.recommendations.length} suggestions
+                {ai.recommendations.length} suggestions
               </span>
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {analysis.ai_response.recommendations.map((rec: any, i: number) => (
+              {ai.recommendations.map((rec: any, i: number) => (
                 <div key={i} className="rounded-xl p-4" style={{ backgroundColor: "#0d1117", border: "1px solid #2a3a4e" }}>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full text-blue-400"
                     style={{ backgroundColor: "#1e2d3d", border: "1px solid #60a5fa30" }}>
@@ -265,10 +388,10 @@ function HomePage() {
           </div>
 
           {/* ── Rewrite Suggestions ── */}
-          {analysis.ai_response.rewrite_suggestions &&
-            analysis.ai_response.rewrite_suggestions.length > 0 && (
+          {ai.rewrite_suggestions &&
+            ai.rewrite_suggestions.length > 0 && (
             <RewriteSuggestions
-              suggestions={analysis.ai_response.rewrite_suggestions}
+              suggestions={ai.rewrite_suggestions}
             />
           )}
 
@@ -282,7 +405,8 @@ function HomePage() {
           </button>
 
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

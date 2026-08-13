@@ -40,19 +40,38 @@ export function ScoreGauge({ score }: { score: number }) {
 
 // ─── Keywords Bar Chart ───────────────────────────────────────
 export function KeywordsBarChart({
-  matched,
-  missing
+  matchedRequired,
+  missingRequired,
+  matchedPreferred,
+  missingPreferred
 }: {
-  matched: string[];
-  missing: string[];
+  matchedRequired: string[];
+  missingRequired: string[];
+  matchedPreferred: string[];
+  missingPreferred: string[];
 }) {
-  const data = [
-    {
-      name: "Keywords",
-      Matched: matched.length,
-      Missing: missing.length,
-    }
-  ];
+  const hasPreferred = matchedPreferred.length > 0 || missingPreferred.length > 0;
+
+  const data = hasPreferred
+    ? [
+        {
+          name: "Required",
+          Matched: matchedRequired.length,
+          Missing: missingRequired.length,
+        },
+        {
+          name: "Preferred",
+          Matched: matchedPreferred.length,
+          Missing: missingPreferred.length,
+        }
+      ]
+    : [
+        {
+          name: "Keywords",
+          Matched: matchedRequired.length,
+          Missing: missingRequired.length,
+        }
+      ];
 
   return (
     <ResponsiveContainer width="100%" height={180}>
